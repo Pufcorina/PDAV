@@ -152,7 +152,35 @@ void printMatrix(const char* filename, struct EncodedMatrix* matrix, int length)
   fclose(fp);
 }
 
+unsigned int** compressMatrixes(int width, int height, struct EncodedMatrix* matrixes, int blockSize) {
+  unsigned int** matrix = matrixMalloc(width, height);
+  int length = (width * height) / (blockSize * blockSize);
 
+  for (size_t k = 0; k < length; k++) {
+    int poz_i = matrixes[k].i;
+    int poz_j = matrixes[k].j;
+
+    for (size_t i = 0; i < blockSize; i++)
+      for (size_t j = 0; j < blockSize; j++)
+        matrix[i + poz_i][j + poz_j] = matrixes[k].matrix[i][j];
+  }
+
+  return matrix;
+}
+
+struct Pixels* createFullMatrix(struct BlocksImg* block) {
+  struct Pixels* pi = (struct Pixels*)malloc(sizeof(struct Pixels));
+
+  pi->width = block->width;
+  pi->height = block->height;
+  pi->format = block->format;
+
+  pi->a = compressMatrixes(block->width, block->height, block->a, 8);
+  pi->b = compressMatrixes(block->width, block->height, block->b, 4);
+  pi->c = compressMatrixes(block->width, block->height, block->c, 4);
+
+  return pi;
+}
 
 void decode_ppm(struct BlocksImg* block) {
   int length = block->width * block->height / 64;
@@ -160,9 +188,9 @@ void decode_ppm(struct BlocksImg* block) {
   printMatrix("./output/uBlock", block->b, length * 4);
   printMatrix("./output/vBlock", block->c, length * 4);
 
+  struct Pixels* pi = createFullMatrix(block);
+  pi = convertFromYUVtoRGB(pi);
+  struct PPMImage* img = convertMatrixesToArray(pi);
 
-  // pi = convertFromYUVtoRGB(pi);
-  // struct PPMImage* img = convertMatrixesToArray(pi);
-  //
-  // writePPM("./output/finalFile.ppm", img);
+  writePPM("./output/finalFile.ppm", img);
 }

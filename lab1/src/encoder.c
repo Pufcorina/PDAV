@@ -264,11 +264,10 @@ struct EncodedMatrix* splitMatrix(unsigned int** matrix, int sizeBlock, int widt
 
   int k = 0;
   for (int i = 0; i < height; i += sizeBlock)
-    for(int j = 0; j < width; j += sizeBlock)
-      {
+    for(int j = 0; j < width; j += sizeBlock) {
         blocks[k] = submatrice(i, j, sizeBlock, matrix);
         k++;
-      }
+    }
   return blocks;
 }
 
