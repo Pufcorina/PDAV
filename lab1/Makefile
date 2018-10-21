@@ -1,10 +1,13 @@
-all: compile run exterminate
+all: compile runP3 runP6 exterminate
 
 compile:
 	@gcc -o project ./src/main.c ./src/encoder.c ./src/decoder.c ./src/matrixMan.c
 
-run:
-	@./project ./data/nt-P3.ppm
+runP3:
+	@./project ./data/nt-P3.ppm ./output/finalP3.ppm
+
+runP6:
+		@./project ./data/nt-P6.ppm ./output/finalP6.ppm > /dev/null
 
 exterminate:
 	@rm -rf project

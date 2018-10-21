@@ -111,15 +111,15 @@ struct Pixels* convertFromYUVtoRGB(struct Pixels* yuv) {
     {
       //1
 
-      // rgb->a[i][j] = yuv->a[i][j]  + 1.140 * yuv->c[i][j];
-      // rgb->b[i][j] = yuv->a[i][j]  - (0.394 * yuv->b[i][j]) - (0.581 * yuv->c[i][j]);
-      // rgb->c[i][j] = yuv->a[i][j]  + 2.032 * yuv->b[i][j];
+      rgb->a[i][j] = yuv->a[i][j]  + 1.140 * yuv->c[i][j];
+      rgb->b[i][j] = yuv->a[i][j]  - (0.394 * yuv->b[i][j]) - (0.581 * yuv->c[i][j]);
+      rgb->c[i][j] = yuv->a[i][j]  + 2.032 * yuv->b[i][j];
 
       //2
 
-      rgb->a[i][j] = 1.164 * (yuv->a[i][j] - 16) + 1.596 * (yuv->b[i][j] - 128);
-      rgb->b[i][j] = 1.164 * (yuv->a[i][j] - 16) - 0.813 * (yuv->b[i][j] - 128) - 0.392 * (yuv->c[i][j] - 128);
-      rgb->c[i][j] = 1.164 * (yuv->a[i][j] - 16) + 2.017 * (yuv->c[i][j] - 128);
+      // rgb->a[i][j] = 1.164 * (yuv->a[i][j] - 16) + 1.596 * (yuv->b[i][j] - 128);
+      // rgb->b[i][j] = 1.164 * (yuv->a[i][j] - 16) - 0.813 * (yuv->b[i][j] - 128) - 0.392 * (yuv->c[i][j] - 128);
+      // rgb->c[i][j] = 1.164 * (yuv->a[i][j] - 16) + 2.017 * (yuv->c[i][j] - 128);
 
       rgb->a[i][j] = clampTo8Bit(rgb->a[i][j]);
       rgb->b[i][j] = clampTo8Bit(rgb->b[i][j]);
@@ -182,7 +182,7 @@ struct Pixels* createFullMatrix(struct BlocksImg* block) {
   return pi;
 }
 
-void decode_ppm(struct BlocksImg* block) {
+void decode_ppm(struct BlocksImg* block, const char* filename) {
   int length = block->width * block->height / 64;
   printMatrix("./output/yBlock", block->a, length);
   printMatrix("./output/uBlock", block->b, length * 4);
@@ -192,5 +192,5 @@ void decode_ppm(struct BlocksImg* block) {
   pi = convertFromYUVtoRGB(pi);
   struct PPMImage* img = convertMatrixesToArray(pi);
 
-  writePPM("./output/finalFile.ppm", img);
+  writePPM(filename, img);
 }

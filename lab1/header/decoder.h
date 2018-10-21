@@ -6,5 +6,5 @@ void writePPM(const char *filename, struct PPMImage *img);
 void writePPM_P6(const char *filename, struct PPMImage *img);
 void writePPM_P3(const char *filename, struct PPMImage *img);
 
-void decode_ppm(struct BlocksImg* pi);
+void decode_ppm(struct BlocksImg* block, const char* filename);
 struct PPMImage* convertMatrixesToArray(struct Pixels* img);
