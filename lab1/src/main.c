@@ -1,4 +1,5 @@
-#include "rw.h"
+#include "../header/encoder.h"
+#include "../header/decoder.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -9,9 +10,8 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
-  PPMImage *image;
-  image = readPPM(argv[1]);
-  writePPM("finalFile.ppm", image);
+  decode_ppm(encode_ppm(argv[1]));
+  printf("Imi cer scuze pentru orice maltratare, totul a fost in scop stiintific :(\n");
 
   return 0;
 }
