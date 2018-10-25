@@ -110,12 +110,16 @@ struct Pixels* convertFromYUVtoRGB(struct Pixels* yuv) {
     for (int j = 0; j < width; j++)
     {
       int Y = yuv->a[i][j];
-      int Cr = yuv->c[i][j] - 128;
       int Cb = yuv->b[i][j] - 128;
+      int Cr = yuv->c[i][j] - 128;
 
-      rgb->a[i][j] = clampTo8Bit(Y + Cr + (Cr >> 2) + (Cr >> 3) + (Cr >> 5));
-      rgb->b[i][j] = clampTo8Bit(Y - ((Cb >> 2) + (Cb >> 4) + (Cb >> 5)) - ((Cr >> 1) + (Cr >> 3) + (Cr >> 4) + (Cr >> 5)));
-      rgb->c[i][j] = clampTo8Bit(Y - Cb + (Cb >> 1) + (Cb >> 2) + (Cb >> 6));
+      // rgb->a[i][j] = clampTo8Bit(Y + Cr + (Cr >> 2) + (Cr >> 3) + (Cr >> 5));
+      // rgb->b[i][j] = clampTo8Bit(Y - ((Cb >> 2) + (Cb >> 4) + (Cb >> 5)) - ((Cr >> 1) + (Cr >> 3) + (Cr >> 4) + (Cr >> 5)));
+      // rgb->c[i][j] = clampTo8Bit(Y - Cb + (Cb >> 1) + (Cb >> 2) + (Cb >> 6));
+
+      rgb->a[i][j] = clampTo8Bit(Y  + 1.402 * Cr);
+      rgb->b[i][j] = clampTo8Bit(Y  - 0.344136 * Cb - 0.714136 * Cr);
+      rgb->c[i][j] = clampTo8Bit(Y  + 0.1772 * Cb);
     }
 
   return rgb;
@@ -160,6 +164,42 @@ unsigned int** compressMatrixes(int width, int height, struct EncodedMatrix* mat
   return matrix;
 }
 
+struct EncodedMatrix expandAverage(struct EncodedMatrix matrix) {
+  struct EncodedMatrix submat;
+
+  submat.i = matrix.i;
+  submat.j = matrix.j;
+  submat.size = 8;
+  submat.matrix = matrixMalloc(8, 8);
+  int ii = 0;
+  int jj = 0;
+
+  for(int i = 0; i < 8; i += 2)
+  {
+    for(int j = 0; j < 8; j += 2)
+    {
+      if(jj == 4) jj = 0;
+      submat.matrix[i][j] = matrix.matrix[ii][jj];
+      submat.matrix[i+1][j] = matrix.matrix[ii][jj];
+      submat.matrix[i][j+1] = matrix.matrix[ii][jj];
+      submat.matrix[i+1][j+1] = matrix.matrix[ii][jj];
+      jj++;
+    }
+    ii++;
+  }
+
+  return submat;
+}
+
+struct EncodedMatrix* expandBlocks(struct EncodedMatrix* matrixes, int length) {
+  struct EncodedMatrix* blocks = (struct EncodedMatrix*)malloc(sizeof(struct EncodedMatrix) * length);
+
+  for (int k = 0; k < length; k++)
+    blocks[k] = expandAverage(matrixes[0]);
+
+  return blocks;
+}
+
 
 struct Pixels* createFullMatrix(struct BlocksImg* block) {
   struct Pixels* pi = (struct Pixels*)malloc(sizeof(struct Pixels));
@@ -168,9 +208,14 @@ struct Pixels* createFullMatrix(struct BlocksImg* block) {
   pi->height = block->height;
   pi->format = block->format;
 
+  int length = block->width * block->height / 64;
+
+  struct EncodedMatrix* u = expandBlocks(block->b, length);
+  struct EncodedMatrix* v = expandBlocks(block->c, length);
+
   pi->a = compressMatrixes(block->width, block->height, block->a, 8);
-  pi->b = compressMatrixes(block->width, block->height, block->b, 4);
-  pi->c = compressMatrixes(block->width, block->height, block->c, 4);
+  pi->b = compressMatrixes(block->width, block->height, u, 8);
+  pi->c = compressMatrixes(block->width, block->height, v, 8);
 
   return pi;
 }
@@ -181,11 +226,11 @@ void decode_ppm(struct BlocksImg* block, const char* filename) {
   printMatrix("./output/uBlock", block->b, length);
   printMatrix("./output/vBlock", block->c, length);
 
-  
 
-  // struct Pixels* pi = createFullMatrix(block);
-  // pi = convertFromYUVtoRGB(pi);
-  // struct PPMImage* img = convertMatrixesToArray(pi);
-  //
-  // writePPM(filename, img);
+
+  struct Pixels* pi = createFullMatrix(block);
+  pi = convertFromYUVtoRGB(pi);
+  struct PPMImage* img = convertMatrixesToArray(pi);
+
+  writePPM(filename, img);
 }

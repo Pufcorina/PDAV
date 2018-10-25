@@ -187,13 +187,13 @@ struct Pixels* convertFromRGBtoYUV(struct Pixels* rgb) {
       int g = rgb->b[i][j];
       int b = rgb->c[i][j];
 
-      yuv->a[i][j] = ((66 * r + 129 * g + 25 * b + 128) >> 8) + 16;
-      yuv->b[i][j] = ((-33 * r - 74 * g + 112 * b + 128) >> 8) + 128;
-      yuv->c[i][j] = ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128;
+      // yuv->a[i][j] = ((66 * r + 129 * g + 25 * b + 128) >> 8) + 16;
+      // yuv->b[i][j] = ((-33 * r - 74 * g + 112 * b + 128) >> 8) + 128;
+      // yuv->c[i][j] = ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128;
 
-      // yuv->a[i][j] = 0.299 * rgb->a[i][j] + 0.587 * rgb->b[i][j] + 0.114 * rgb->c[i][j];
-      // yuv->b[i][j] = -0.169 * rgb->a[i][j] - 0.331 * rgb->b[i][j] + 0.499 * rgb->c[i][j] + 128;
-      // yuv->c[i][j] = 0.449 * rgb->a[i][j] - 0.418 * rgb->b[i][j] - 0.0813 * rgb->c[i][j] + 128;
+      yuv->a[i][j] = 0.299 * rgb->a[i][j] + 0.587 * rgb->b[i][j] + 0.114 * rgb->c[i][j];
+      yuv->b[i][j] = -0.169 * rgb->a[i][j] - 0.331 * rgb->b[i][j] + 0.499 * rgb->c[i][j] + 128;
+      yuv->c[i][j] = 0.449 * rgb->a[i][j] - 0.418 * rgb->b[i][j] - 0.0813 * rgb->c[i][j] + 128;
     }
 
   return yuv;
@@ -240,7 +240,7 @@ int averageBlock(int poz_i, int poz_j, unsigned int** matrix) {
     {
       sum += matrix[i][j];
     }
-  sum /= 4;
+  sum /= 2;
   return sum;
 }
 
