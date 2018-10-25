@@ -1,12 +1,6 @@
 #include "../header/matrixMan.h"
 #include <stdlib.h>
 
-unsigned int clampTo8Bit(int v) {
-  if ( (v & ~0xFF) != 0 )
-    v = ((~v) >> 31) & 0xFF;
-  return v;
-}
-
 unsigned int** matrixMalloc(int width, int height) {
   unsigned int** matrix = (unsigned int**) malloc(sizeof(unsigned int*) * height);
   for (int i = 0; i < height; i++) {
@@ -14,4 +8,12 @@ unsigned int** matrixMalloc(int width, int height) {
   }
 
   return matrix;
+}
+
+unsigned int clampTo8Bit(int n){
+    if (n < 0)
+      n = 0;
+    if (n > 255)
+      n = 255;
+    return n;
 }

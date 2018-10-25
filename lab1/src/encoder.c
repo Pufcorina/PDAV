@@ -183,27 +183,17 @@ struct Pixels* convertFromRGBtoYUV(struct Pixels* rgb) {
   for (int i = 0; i < height; i++)
     for (int j = 0; j < width; j++)
     {
-      //1
+      int r = rgb->a[i][j];
+      int g = rgb->b[i][j];
+      int b = rgb->c[i][j];
+
+      yuv->a[i][j] = ((66 * r + 129 * g + 25 * b + 128) >> 8) + 16;
+      yuv->b[i][j] = ((-33 * r - 74 * g + 112 * b + 128) >> 8) + 128;
+      yuv->c[i][j] = ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128;
 
       // yuv->a[i][j] = 0.299 * rgb->a[i][j] + 0.587 * rgb->b[i][j] + 0.114 * rgb->c[i][j];
-      // yuv->b[i][j] = -(0.147 * rgb->a[i][j]) - (0.289 * rgb->b[i][j]) + (0.436 * rgb->c[i][j]);
-      // yuv->c[i][j] = (0.615 * rgb->a[i][j]) - (0.515 * rgb->b[i][j]) - (0.100 * rgb->c[i][j]);
-
-      //2
-
-      // yuv->a[i][j] = 0.299 * rgb->a[i][j] + 0.587 * rgb->b[i][j] + 0.114 * rgb->c[i][j];
-      // yuv->b[i][j] = 128 - 0.1687 * rgb->a[i][j] - 0.3312 * rgb->b[i][j] + 0.5 * rgb->c[i][j];
-      // yuv->c[i][j] = 128 + 0.5 * rgb->a[i][j] - 0.4186 * rgb->b[i][j] - 0.0813 * rgb->c[i][j];
-
-      //3
-
-      yuv->a[i][j] = 0.257 * rgb->a[i][j] + 0.504 * rgb->b[i][j] + 0.098 * rgb->c[i][j] + 16;
-      yuv->b[i][j] = 0.439 * rgb->a[i][j] - 0.368 * rgb->b[i][j] + 0.071 * rgb->c[i][j] + 128;
-      yuv->c[i][j] = 0.148 * rgb->a[i][j] - 0.291 * rgb->b[i][j] - 0.439 * rgb->c[i][j] + 128;
-
-      yuv->a[i][j] = clampTo8Bit(yuv->a[i][j]);
-      yuv->b[i][j] = clampTo8Bit(yuv->b[i][j]);
-      yuv->c[i][j] = clampTo8Bit(yuv->c[i][j]);
+      // yuv->b[i][j] = -0.169 * rgb->a[i][j] - 0.331 * rgb->b[i][j] + 0.499 * rgb->c[i][j] + 128;
+      // yuv->c[i][j] = 0.449 * rgb->a[i][j] - 0.418 * rgb->b[i][j] - 0.0813 * rgb->c[i][j] + 128;
     }
 
   return yuv;
@@ -243,6 +233,34 @@ struct Pixels* convertArrayToMatrixes(struct PPMImage* img) {
   return pi;
 }
 
+int averageBlock(int poz_i, int poz_j, unsigned int** matrix) {
+  int sum = 0;
+  for (int i = poz_i; i < 2 + poz_i; i++)
+    for(int j = poz_j; j < 2 + poz_j; j++)
+    {
+      sum += matrix[i][j];
+    }
+  sum /= 4;
+  return sum;
+}
+
+struct EncodedMatrix submatrice4Blocks(int poz_i, int poz_j, int sizeBlock, unsigned int** matrix) {
+  struct EncodedMatrix submat;
+
+  submat.i = poz_i;
+  submat.j = poz_j;
+  submat.size = 4;
+  submat.matrix = matrixMalloc(4, 4);
+
+  for(int i = 0; i < 4; i++)
+    for(int j = 0; j < 4; j++)
+    {
+      submat.matrix[i][j] = averageBlock(i * 2 + poz_i, j * 2 + poz_j, matrix);
+    }
+
+  return submat;
+}
+
 struct EncodedMatrix submatrice(int poz_i, int poz_j, int sizeBlock, unsigned int** matrix) {
   struct EncodedMatrix submat;
 
@@ -258,14 +276,14 @@ struct EncodedMatrix submatrice(int poz_i, int poz_j, int sizeBlock, unsigned in
   return submat;
 }
 
-struct EncodedMatrix* splitMatrix(unsigned int** matrix, int sizeBlock, int width, int height) {
+struct EncodedMatrix* splitMatrix(unsigned int** matrix, int sizeBlock, int width, int height, struct EncodedMatrix (*f)(int poz_i, int poz_j, int sizeBlock, unsigned int** matrix)) {
   int length = (width * height) / (sizeBlock * sizeBlock);
   struct EncodedMatrix* blocks = (struct EncodedMatrix*)malloc(sizeof(struct EncodedMatrix) * length);
 
   int k = 0;
   for (int i = 0; i < height; i += sizeBlock)
     for(int j = 0; j < width; j += sizeBlock) {
-        blocks[k] = submatrice(i, j, sizeBlock, matrix);
+        blocks[k] = f(i, j, sizeBlock, matrix);
         k++;
     }
   return blocks;
@@ -278,9 +296,9 @@ struct BlocksImg* splitImageInBlocks(struct Pixels* img) {
   blockImg->format = img->format;
 
 
-  blockImg->a = splitMatrix(img->a, 8, img->width, img->height);
-  blockImg->b = splitMatrix(img->b, 4, img->width, img->height);
-  blockImg->c = splitMatrix(img->c, 4, img->width, img->height);
+  blockImg->a = splitMatrix(img->a, 8, img->width, img->height, submatrice);
+  blockImg->b = splitMatrix(img->b, 8, img->width, img->height, submatrice4Blocks);
+  blockImg->c = splitMatrix(img->c, 8, img->width, img->height, submatrice4Blocks);
 
   return blockImg;
 }

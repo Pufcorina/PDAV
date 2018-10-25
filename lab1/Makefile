@@ -1,4 +1,4 @@
-all: compile runP3 runP6 exterminate
+all: compile runP3 exterminate
 
 compile:
 	@gcc -o project ./src/main.c ./src/encoder.c ./src/decoder.c ./src/matrixMan.c
